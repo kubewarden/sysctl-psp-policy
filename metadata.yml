@@ -6,13 +6,53 @@ rules:
 mutating: false
 contextAware: false
 annotations:
-  io.kubewarden.policy.title: policy-name
-  io.kubewarden.policy.description: Short description
-  io.kubewarden.policy.author: policy-author
-  io.kubewarden.policy.url: https://github.com/yourorg/policy-name
-  io.kubewarden.policy.source: https://github.com/yourorg/policy-name
+  io.kubewarden.policy.title: policy-sysctl
+  io.kubewarden.policy.description: policy to control sysctls in pods
+  io.kubewarden.policy.author: Victor Cuadrado Juan
+  io.kubewarden.policy.url: https://github.com/kubewarden/psp-sysctl-policy
+  io.kubewarden.policy.source: https://github.com/kubewarden/psp-sysctl-policy
   io.kubewarden.policy.license: Apache-2.0
   io.kubewarden.policy.usage: |
-    Long explaination.
+    This policy validates which sysctls can get set in pods by specifying
+    lists of sysctls or sysctl patterns to be allowed or forbidden. One can then
+    modify the securityContext of Pods to make use of the Sysctls as permitted by
+    this policy.
 
-    **Note well:** this can be Markdown text
+    ## Settings
+
+    The following settings are accepted:
+
+    * `forbiddenSysctls`: List of plain sysctl names or sysctl patterns (which end
+      with `*`) to be forbidden. You can forbid a combination of safe and unsafe
+      sysctls in the list. To forbid setting any sysctls, use * on its own.
+    * `allowedUnsafeSysctls`: List of plain sysctl names that can be used in Pods.
+      `*` cannot be used.
+
+    A sysctl cannot be both forbidden and allowed at the same time.
+
+    ### Example
+
+    With this policy deployed and configured as:
+
+    ```yaml
+    forbiddenSysctls:
+    - kernel.*
+    - net.ipv6.conf.lo.max_addresses
+    allowedUnsafeSysctls:
+    - net.core.somaxconn
+    ```
+
+    A pod can specify the following Sysctls, that would get permitted:
+
+    ``` yaml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: sysctl-example
+    spec:
+      securityContext:
+        sysctls:
+        - name: net.core.somaxconn
+          value: "1024"
+    ...
+    ```
