@@ -69,8 +69,7 @@ func validate(payload []byte) ([]byte, error) {
 
 	// build set of prefixes from patterns of forbidden sysctls:
 	globForbiddenSysctls := mapset.NewThreadUnsafeSet()
-	it := settings.ForbiddenSysctls.Iterator()
-	for elem := range it.C {
+	for _, elem := range settings.ForbiddenSysctls.ToSlice() {
 		if strings.HasSuffix(elem.(string), "*") {
 			globForbiddenSysctls.Add(strings.TrimSuffix(elem.(string), "*"))
 		}
@@ -85,8 +84,7 @@ func validate(payload []byte) ([]byte, error) {
 		}
 
 		// if sysctl matches a pattern, it is forbidden:
-		it := globForbiddenSysctls.Iterator()
-		for elem := range it.C {
+		for _, elem := range globForbiddenSysctls.ToSlice() {
 			if strings.HasPrefix(sysctl, elem.(string)) {
 				err = fmt.Errorf("sysctl %s is on the forbidden list", sysctl)
 				return false // stop iterating

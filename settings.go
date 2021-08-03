@@ -74,16 +74,14 @@ func newSettings(payload []byte, paths ...string) (Settings, error) {
 
 func (s *Settings) Valid() (bool, error) {
 
-	it := s.AllowedUnsafeSysctls.Iterator()
-	for elem := range it.C {
+	for _, elem := range s.AllowedUnsafeSysctls.ToSlice() {
 		if strings.Contains(elem.(string), "*") {
 			return false,
 				fmt.Errorf("allowedUnsafeSysctls doesn't accept patterns with `*`")
 		}
 	}
 
-	it = s.ForbiddenSysctls.Iterator()
-	for elem := range it.C {
+	for _, elem := range s.ForbiddenSysctls.ToSlice() {
 		if strings.Contains(elem.(string), "*") &&
 			!strings.HasSuffix(elem.(string), "*") {
 			return false,
