@@ -2,11 +2,30 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
+	mapset "github.com/deckarep/golang-set"
 	onelog "github.com/francoispqt/onelog"
 	"github.com/kubewarden/gjson"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 )
+
+// getSafeSysctls returns an array with known safe sysctls.
+//
+// A sysctl is called safe iff:
+// - it is namespaced in the container or the pod
+// - it is isolated, i.e. has no influence on any other pod on the same node.
+//
+// A (possibly not up-to-date) list of known safe sysctls can be found at:
+// https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline
+func getSafeSysctls() [4]string {
+	return [4]string{
+		"kernel.shm_rmid_forced",
+		"net.ipv4.ip_local_port_range",
+		"net.ipv4.tcp_syncookies",
+		"net.ipv4.ping_group_range",
+	}
+}
 
 func validate(payload []byte) ([]byte, error) {
 	settings, err := NewSettingsFromValidationReq(payload)
@@ -18,34 +37,85 @@ func validate(payload []byte) ([]byte, error) {
 
 	logger.Info("validating request")
 
+	if kind := gjson.GetBytes(payload, "request.kind"); kind.String() != "Pod" {
+		return kubewarden.RejectRequest(
+			kubewarden.Message("object is not of kind Pod: rejecting request"),
+			kubewarden.Code(421))
+	}
+
 	data := gjson.GetBytes(
 		payload,
-		"request.object.metadata.name")
+		"request.spec.securityContext.sysctls")
 
 	if !data.Exists() {
-		logger.Warn("cannot read object name from metadata: accepting request")
+		logger.Warn("pod doesn't specify sysctls: accepting request")
 		return kubewarden.AcceptRequest()
 	}
-	name := data.String()
 
-	logger.DebugWithFields("validating ingress object", func(e onelog.Entry) {
-		namespace := gjson.GetBytes(payload, "request.object.metadata.namespace").String()
+	logger.DebugWithFields("validating pod object", func(e onelog.Entry) {
+		name := gjson.GetBytes(payload, "request.metadata.name").String()
+		namespace := gjson.GetBytes(payload,
+			"request.metadata.namespace").String()
 		e.String("name", name)
 		e.String("namespace", namespace)
 	})
 
-	if settings.DeniedNames.Contains(name) {
-		logger.InfoWithFields("rejecting ingress object", func(e onelog.Entry) {
+	// build set of safe sysctls:
+	knownSafeSysctlsArray := getSafeSysctls()
+	knownSafeSysctls := mapset.NewThreadUnsafeSet()
+	for i := 0; i < len(knownSafeSysctlsArray); i++ {
+		knownSafeSysctls.Add(knownSafeSysctlsArray[i])
+	}
+
+	// build set of prefixes from patterns of forbidden sysctls:
+	globForbiddenSysctls := mapset.NewThreadUnsafeSet()
+	it := settings.ForbiddenSysctls.Iterator()
+	for elem := range it.C {
+		if strings.HasSuffix(elem.(string), "*") {
+			globForbiddenSysctls.Add(strings.TrimSuffix(elem.(string), "*"))
+		}
+	}
+
+	data.ForEach(func(key, value gjson.Result) bool {
+		sysctl := gjson.Get(value.String(), "name").String()
+
+		if settings.ForbiddenSysctls.Contains(sysctl) {
+			err = fmt.Errorf("sysctl %s is on the forbidden list", sysctl)
+			return false // stop iterating
+		}
+
+		// if sysctl matches a pattern, it is forbidden:
+		it := globForbiddenSysctls.Iterator()
+		for elem := range it.C {
+			if strings.HasPrefix(sysctl, elem.(string)) {
+				err = fmt.Errorf("sysctl %s is on the forbidden list", sysctl)
+				return false // stop iterating
+			}
+		}
+
+		// if sysctl is not on the safe list nor an exception, it is forbidden:
+		if !knownSafeSysctls.Contains(sysctl) &&
+			!settings.AllowedUnsafeSysctls.Contains(sysctl) {
+			err = fmt.Errorf("sysctl %s is not on safe list, nor is in the allowedUnsafeSysctls list",
+				sysctl)
+			return false // stop iterating
+		}
+		return true // continue iterating
+	})
+
+	if err != nil {
+		logger.DebugWithFields("rejecting pod object", func(e onelog.Entry) {
+			name := gjson.GetBytes(payload, "request.metadata.name").String()
+			namespace := gjson.GetBytes(payload, "request.metadata.namespace").String()
 			e.String("name", name)
-			e.String("denied_names", settings.DeniedNames.String())
+			e.String("namespace", namespace)
 		})
 
 		return kubewarden.RejectRequest(
-			kubewarden.Message(
-				fmt.Sprintf("The '%s' name is on the deny list", name)),
+			kubewarden.Message(err.Error()),
 			kubewarden.NoCode)
 	}
 
-	logger.Info("accepting ingress object")
+	logger.Info("accepting pod object")
 	return kubewarden.AcceptRequest()
 }

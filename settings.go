@@ -6,10 +6,12 @@ import (
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 
 	"fmt"
+	"strings"
 )
 
 type Settings struct {
-	DeniedNames mapset.Set `json:"denied_names"`
+	AllowedUnsafeSysctls mapset.Set `json:"allowedUnsafeSysctls"`
+	ForbiddenSysctls     mapset.Set `json:"forbiddenSysctls"`
 }
 
 // Builds a new Settings instance starting from a validation
@@ -17,47 +19,86 @@ type Settings struct {
 // {
 //    "request": ...,
 //    "settings": {
-//       "denied_names": [...]
+//       "allowedUnsafeSysctls": [...],
+//       "forbiddenSysctls": [...]
 //    }
 // }
 func NewSettingsFromValidationReq(payload []byte) (Settings, error) {
 	return newSettings(
 		payload,
-		"settings.denied_names")
+		"settings.allowedUnsafeSysctls",
+		"settings.forbiddenSysctls")
 }
 
 // Builds a new Settings instance starting from a Settings
 // payload:
 // {
-//    "denied_names": ...
+//    "allowedUnsafeSysctls": [...],
+//    "forbiddenSysctls": [...]
 // }
 func NewSettingsFromValidateSettingsPayload(payload []byte) (Settings, error) {
+	if !gjson.ValidBytes(payload) {
+		return Settings{}, fmt.Errorf("denied JSON payload")
+	}
+
 	return newSettings(
 		payload,
-		"denied_names")
+		"settings.allowedUnsafeSysctls",
+		"settings.forbiddenSysctls")
 }
 
 func newSettings(payload []byte, paths ...string) (Settings, error) {
-	if len(paths) != 1 {
+	if len(paths) != 2 {
 		return Settings{}, fmt.Errorf("wrong number of json paths")
 	}
 
 	data := gjson.GetManyBytes(payload, paths...)
 
-	deniedNames := mapset.NewThreadUnsafeSet()
+	allowedUnsafeSysctls := mapset.NewThreadUnsafeSet()
 	data[0].ForEach(func(_, entry gjson.Result) bool {
-		deniedNames.Add(entry.String())
+		allowedUnsafeSysctls.Add(entry.String())
+		return true
+	})
+
+	forbiddenSysctls := mapset.NewThreadUnsafeSet()
+	data[1].ForEach(func(_, entry gjson.Result) bool {
+		forbiddenSysctls.Add(entry.String())
 		return true
 	})
 
 	return Settings{
-		DeniedNames: deniedNames,
+		AllowedUnsafeSysctls: allowedUnsafeSysctls,
+		ForbiddenSysctls:     forbiddenSysctls,
 	}, nil
 }
 
-// No special check has to be done
-func (s *Settings) Valid() bool {
-	return true
+func (s *Settings) Valid() (bool, error) {
+
+	it := s.AllowedUnsafeSysctls.Iterator()
+	for elem := range it.C {
+		if strings.Contains(elem.(string), "*") {
+			return false,
+				fmt.Errorf("allowedUnsafeSysctls doesn't accept patterns with `*`")
+		}
+	}
+
+	it = s.ForbiddenSysctls.Iterator()
+	for elem := range it.C {
+		if strings.Contains(elem.(string), "*") &&
+			!strings.HasSuffix(elem.(string), "*") {
+			return false,
+				fmt.Errorf("forbiddenSysctls only accepts patterns with `*` as suffix")
+		}
+	}
+
+	allowedAndForbidden := s.AllowedUnsafeSysctls.Intersect(s.ForbiddenSysctls)
+	if allowedAndForbidden.Cardinality() != 0 {
+		return false,
+			fmt.Errorf("these sysctls cannot be allowed and forbidden at the same time: %v",
+				allowedAndForbidden.ToSlice()...)
+	}
+
+	return true, nil
 }
 
 func validateSettings(payload []byte) ([]byte, error) {
@@ -65,14 +106,17 @@ func validateSettings(payload []byte) ([]byte, error) {
 
 	settings, err := NewSettingsFromValidateSettingsPayload(payload)
 	if err != nil {
-		return []byte{}, err
+		return kubewarden.RejectSettings(
+			kubewarden.Message(fmt.Sprintf("provided settings are not valid: %v", err)))
 	}
 
-	if settings.Valid() {
+	valid, err := settings.Valid()
+	if valid {
 		logger.Info("accepting settings")
 		return kubewarden.AcceptSettings()
 	}
 
 	logger.Warn("rejecting settings")
-	return kubewarden.RejectSettings(kubewarden.Message("Provided settings are not valid"))
+	return kubewarden.RejectSettings(
+		kubewarden.Message(fmt.Sprintf("provided settings are not valid: %v", err)))
 }
