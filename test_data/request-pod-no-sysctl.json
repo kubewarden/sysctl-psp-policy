@@ -1,27 +1,46 @@
 {
-    "apiVersion": "v1",
+  "uid": "1299d386-525b-4032-98ae-1949f69f9cfc",
+  "kind": {
+    "group": "",
+    "version": "v1",
+    "kind": "Pod"
+  },
+  "resource": {
+    "group": "",
+    "version": "v1",
+    "resource": "pods"
+  },
+  "requestKind": {
+    "group": "",
+    "version": "v1",
+    "kind": "Pod"
+  },
+  "requestResource": {
+    "group": "",
+    "version": "v1",
+    "resource": "pods"
+  },
+  "name": "nginx",
+  "namespace": "default",
+  "operation": "CREATE",
+  "userInfo": {
+    "username": "kubernetes-admin",
+    "groups": [
+      "system:masters",
+      "system:authenticated"
+    ]
+  },
+  "object": {
     "kind": "Pod",
+    "apiVersion": "v1",
     "metadata": {
-        "creationTimestamp": "2021-08-02T13:41:51Z",
-        "generateName": "hello-no-sysctl-",
-        "labels": {
-            "controller-uid": "0e60cda6-b2da-4c94-9be5-1b4f24cd7bfa",
-            "job-name": "hello-no-sysctl"
-        },
-        "name": "hello-no-sysctl-dv6g7",
-        "namespace": "default",
-        "ownerReferences": [
-            {
-                "apiVersion": "batch/v1",
-                "blockOwnerDeletion": true,
-                "controller": true,
-                "kind": "Job",
-                "name": "hello-no-sysctl",
-                "uid": "0e60cda6-b2da-4c94-9be5-1b4f24cd7bfa"
-            }
-        ],
-        "resourceVersion": "11317",
-        "uid": "b2a3db6d-cf02-4d3b-ab4e-5ca0e888acbe"
+      "name": "hello-z5xq7",
+      "namespace": "default",
+      "uid": "04dc7a5e-e1f1-4e34-8d65-2c9337a43e64",
+      "creationTimestamp": "2020-11-12T15:18:36Z",
+      "labels": {
+        "env": "test"
+      }
     },
     "spec": {
         "containers": [
@@ -40,7 +59,7 @@
                 "volumeMounts": [
                     {
                         "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
-                        "name": "kube-api-access-c2txf",
+                        "name": "kube-api-access-bfdlr",
                         "readOnly": true
                     }
                 ]
@@ -53,7 +72,6 @@
         "priority": 0,
         "restartPolicy": "OnFailure",
         "schedulerName": "default-scheduler",
-        "securityContext": {},
         "serviceAccount": "default",
         "serviceAccountName": "default",
         "terminationGracePeriodSeconds": 30,
@@ -73,7 +91,7 @@
         ],
         "volumes": [
             {
-                "name": "kube-api-access-c2txf",
+                "name": "kube-api-access-bfdlr",
                 "projected": {
                     "defaultMode": 420,
                     "sources": [
@@ -113,58 +131,14 @@
         ]
     },
     "status": {
-        "conditions": [
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2021-08-02T13:41:51Z",
-                "status": "True",
-                "type": "Initialized"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2021-08-02T13:41:55Z",
-                "status": "True",
-                "type": "Ready"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2021-08-02T13:41:55Z",
-                "status": "True",
-                "type": "ContainersReady"
-            },
-            {
-                "lastProbeTime": null,
-                "lastTransitionTime": "2021-08-02T13:41:51Z",
-                "status": "True",
-                "type": "PodScheduled"
-            }
-        ],
-        "containerStatuses": [
-            {
-                "containerID": "containerd://47056ef14be94bf3e74d419943993e6f3ef42e3f100fc8e7bd873bf4b13dad61",
-                "image": "docker.io/library/busybox:latest",
-                "imageID": "docker.io/library/busybox@sha256:0f354ec1728d9ff32edcd7d1b8bbdfc798277ad36120dc3dc683be44524c8b60",
-                "lastState": {},
-                "name": "hello",
-                "ready": true,
-                "restartCount": 0,
-                "started": true,
-                "state": {
-                    "running": {
-                        "startedAt": "2021-08-02T13:41:55Z"
-                    }
-                }
-            }
-        ],
-        "hostIP": "172.18.0.2",
-        "phase": "Running",
-        "podIP": "10.42.0.9",
-        "podIPs": [
-            {
-                "ip": "10.42.0.9"
-            }
-        ],
-        "qosClass": "BestEffort",
-        "startTime": "2021-08-02T13:41:51Z"
+      "phase": "Pending",
+      "qosClass": "BestEffort"
     }
+  },
+  "oldObject": null,
+  "dryRun": false,
+  "options": {
+    "kind": "CreateOptions",
+    "apiVersion": "meta.k8s.io/v1"
+  }
 }

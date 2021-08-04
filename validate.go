@@ -37,7 +37,7 @@ func validate(payload []byte) ([]byte, error) {
 
 	logger.Info("validating request")
 
-	if kind := gjson.GetBytes(payload, "request.kind"); kind.String() != "Pod" {
+	if kind := gjson.GetBytes(payload, "request.object.kind"); kind.String() != "Pod" {
 		return kubewarden.RejectRequest(
 			kubewarden.Message("object is not of kind Pod: rejecting request"),
 			kubewarden.Code(421))
@@ -45,7 +45,7 @@ func validate(payload []byte) ([]byte, error) {
 
 	data := gjson.GetBytes(
 		payload,
-		"request.spec.securityContext.sysctls")
+		"request.object.spec.securityContext.sysctls")
 
 	if !data.Exists() {
 		logger.Warn("pod doesn't specify sysctls: accepting request")
@@ -53,9 +53,9 @@ func validate(payload []byte) ([]byte, error) {
 	}
 
 	logger.DebugWithFields("validating pod object", func(e onelog.Entry) {
-		name := gjson.GetBytes(payload, "request.metadata.name").String()
+		name := gjson.GetBytes(payload, "request.object.metadata.name").String()
 		namespace := gjson.GetBytes(payload,
-			"request.metadata.namespace").String()
+			"request.object.metadata.namespace").String()
 		e.String("name", name)
 		e.String("namespace", namespace)
 	})
@@ -103,8 +103,8 @@ func validate(payload []byte) ([]byte, error) {
 
 	if err != nil {
 		logger.DebugWithFields("rejecting pod object", func(e onelog.Entry) {
-			name := gjson.GetBytes(payload, "request.metadata.name").String()
-			namespace := gjson.GetBytes(payload, "request.metadata.namespace").String()
+			name := gjson.GetBytes(payload, "request.object.metadata.name").String()
+			namespace := gjson.GetBytes(payload, "request.object.metadata.namespace").String()
 			e.String("name", name)
 			e.String("namespace", namespace)
 		})

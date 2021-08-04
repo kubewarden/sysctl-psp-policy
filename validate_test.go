@@ -16,17 +16,17 @@ func TestApproval(t *testing.T) {
 	}{
 		{
 			name:     "empty settings allows safe sysctls",
-			testData: "test_data/pod-safe-sysctls.json",
+			testData: "test_data/request-pod-safe-sysctls.json",
 			settings: Settings{},
 		},
 		{
 			name:     "pod without sysctl always allowed",
-			testData: "test_data/pod-no-sysctl.json",
+			testData: "test_data/request-pod-no-sysctl.json",
 			settings: Settings{},
 		},
 		{
 			name:     "pod with allowedUnsafe sysctl",
-			testData: "test_data/pod-somaxconn.json",
+			testData: "test_data/request-pod-somaxconn.json",
 			settings: Settings{
 				AllowedUnsafeSysctls: mapset.NewThreadUnsafeSetFromSlice([]interface{}{"net.core.somaxconn", "bar"}),
 				ForbiddenSysctls:     mapset.NewThreadUnsafeSetFromSlice([]interface{}{"kernel.shm_rmid_forced"}),
@@ -66,19 +66,19 @@ func TestRejection(t *testing.T) {
 	}{
 		{
 			name:     "object is not of kind pod",
-			testData: "test_data/ingress.json",
+			testData: "test_data/request-ingress.json",
 			settings: Settings{},
 			error:    "object is not of kind Pod: rejecting request",
 		},
 		{
 			name:     "empty settings reject non safe sysctls",
-			testData: "test_data/pod-somaxconn.json",
+			testData: "test_data/request-pod-somaxconn.json",
 			settings: Settings{},
 			error:    "sysctl net.core.somaxconn is not on safe list, nor is in the allowedUnsafeSysctls list",
 		},
 		{
 			name:     "all sysctls forbidden",
-			testData: "test_data/pod-somaxconn.json",
+			testData: "test_data/request-pod-somaxconn.json",
 			settings: Settings{
 				AllowedUnsafeSysctls: mapset.NewSet(),
 				ForbiddenSysctls:     mapset.NewThreadUnsafeSetFromSlice([]interface{}{"*"}),
@@ -87,7 +87,7 @@ func TestRejection(t *testing.T) {
 		},
 		{
 			name:     "net.* sysctls forbidden",
-			testData: "test_data/pod-somaxconn.json",
+			testData: "test_data/request-pod-somaxconn.json",
 			settings: Settings{
 				AllowedUnsafeSysctls: mapset.NewSet(),
 				ForbiddenSysctls:     mapset.NewThreadUnsafeSetFromSlice([]interface{}{"net.*"}),
