@@ -79,8 +79,11 @@ func validate(payload []byte) ([]byte, error) {
 		// if sysctl matches a pattern, it is forbidden:
 		for _, elem := range globForbiddenSysctls.ToSlice() {
 			if strings.HasPrefix(sysctl, elem.(string)) {
-				err = fmt.Errorf("sysctl %s is on the forbidden list", sysctl)
-				return false // stop iterating
+				if !settings.AllowedUnsafeSysctls.Contains(sysctl) {
+					// sysctl is not whitelisted
+					err = fmt.Errorf("sysctl %s is on the forbidden list", sysctl)
+					return false // stop iterating
+				}
 			}
 		}
 
