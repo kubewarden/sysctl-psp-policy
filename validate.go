@@ -37,12 +37,6 @@ func validate(payload []byte) ([]byte, error) {
 
 	logger.Info("validating request")
 
-	if kind := gjson.GetBytes(payload, "request.object.kind"); kind.String() != "Pod" {
-		return kubewarden.RejectRequest(
-			kubewarden.Message("object is not of kind Pod: rejecting request"),
-			kubewarden.Code(421))
-	}
-
 	data := gjson.GetBytes(
 		payload,
 		"request.object.spec.securityContext.sysctls")

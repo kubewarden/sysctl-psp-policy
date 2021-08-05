@@ -1,17 +1,5 @@
 #!/usr/bin/env bats
 
-@test "reject because object is not pod" {
-  run kwctl run policy.wasm -r test_data/request-ingress.json --settings-json '{}'
-
-  # this prints the output when one the checks below fails
-  echo "output = ${output}"
-
-  # request rejected
-  [ "$status" -eq 0 ]
-  [ $(expr "$output" : '.*allowed.*false') -ne 0 ]
-  [ $(expr "$output" : ".*object is not of kind Pod: rejecting request.*") -ne 0 ]
-}
-
 @test "accept because pod doesn't list any sysctls" {
   run kwctl run policy.wasm -r test_data/request-pod-no-sysctl.json --settings-json \
     '{ "allowedUnsafeSysctls": [], "forbiddenSysctls": [ "kernel.shm_rmid_forced", "net.*" ] }'

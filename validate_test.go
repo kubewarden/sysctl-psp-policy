@@ -65,12 +65,6 @@ func TestRejection(t *testing.T) {
 		error    string
 	}{
 		{
-			name:     "object is not of kind pod",
-			testData: "test_data/request-ingress.json",
-			settings: Settings{},
-			error:    "object is not of kind Pod: rejecting request",
-		},
-		{
 			name:     "empty settings reject non safe sysctls",
 			testData: "test_data/request-pod-somaxconn.json",
 			settings: Settings{},
