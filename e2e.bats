@@ -25,7 +25,7 @@
 
 @test "accept because net.core.somaxconn is allowed" {
   run kwctl run policy.wasm -r test_data/request-pod-somaxconn.json --settings-json \
-    '{ "allowedUnsafeSysctls": ["net.core.somaxconn"], "forbiddenSysctls": [] }'
+    '{ "allowedUnsafeSysctls": ["net.core.somaxconn"], "forbiddenSysctls": ["net.*"] }'
 
   # this prints the output when one the checks below fails
   echo "output = ${output}"

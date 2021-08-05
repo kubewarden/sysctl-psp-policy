@@ -29,7 +29,7 @@ func TestApproval(t *testing.T) {
 			testData: "test_data/request-pod-somaxconn.json",
 			settings: Settings{
 				AllowedUnsafeSysctls: mapset.NewThreadUnsafeSetFromSlice([]interface{}{"net.core.somaxconn", "bar"}),
-				ForbiddenSysctls:     mapset.NewThreadUnsafeSetFromSlice([]interface{}{"kernel.shm_rmid_forced"}),
+				ForbiddenSysctls:     mapset.NewThreadUnsafeSetFromSlice([]interface{}{"net.*"}),
 			},
 		},
 	} {
