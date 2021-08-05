@@ -7,7 +7,8 @@ sysctls.
 
 Linux Kernel sysctls are grouped into safe and unsafe sets. A safe sysctl must
 be properly isolated between pods on the same node, and are properly namespaced
-by the kernel. 
+by the kernel. A (possibly outdated) list can be seen
+[here](https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline).
 
 All safe sysctls are enabled by default in Kubernetes.
 All unsafe sysctls are disabled by default and must be explicitly allowed on a
@@ -18,9 +19,6 @@ can get set in pods by specifying lists of sysctls or sysctl patterns to be
 allowed or forbidden. One can then modify the `securityContext` of Pods to make
 use of the Sysctls as permitted by this policy.
 
-Remember that pods that specify disabled unsafe sysctls will be scheduled, but
-will fail to launch with `sysctlForbidden`.
-
 ## Settings
 
 The following settings are accepted:
@@ -29,7 +27,8 @@ The following settings are accepted:
   with `*`) to be forbidden. You can forbid a combination of safe and unsafe
   sysctls in the list. To forbid setting any sysctls, use `*` on its own.
 * `allowedUnsafeSysctls`: List of plain sysctl names that can be used in Pods.
-  `*` cannot be used.
+  `*` cannot be used. `allowedUnsafeSysctls` has precedence over
+  `forbiddenSysctls`.
 
 A sysctl cannot be both forbidden and allowed at the same time.
 
@@ -37,15 +36,16 @@ A sysctl cannot be both forbidden and allowed at the same time.
 
 With this policy deployed and configured as:
 
-```yaml
+``` yaml
 forbiddenSysctls:
-- kernel.*
-- net.ipv6.conf.lo.max_addresses
+- net.ipv6.conf.lo.*
 allowedUnsafeSysctls:
-- net.core.somaxconn
+- net.ipv6.conf.lo.max_addresses
 ```
 
-A pod can specify the following Sysctls, that would get permitted:
+
+A pod specifying the following Sysctls would get permitted, as they are
+allowedUnsafe or on the default safe set:
 
 ``` yaml
 apiVersion: v1
@@ -55,13 +55,16 @@ metadata:
 spec:
   securityContext:
     sysctls:
-    - name: net.core.somaxconn
+    - net.ipv6.conf.lo.max_addresses
       value: "1024"
+    - name: kernel.shm_rmid_forced
+      value: "0"
 ...
 ```
 
 
-Yet the following pod will get rejected:
+Yet the following pod will get rejected, as `net.ipv6.conf.lo.mtu` is forbidden,
+even if `kernel.shm_rmid_forced` is part of the default safe set:
 
 ``` yaml
 apiVersion: v1
@@ -73,9 +76,7 @@ spec:
     sysctls:
     - name: kernel.shm_rmid_forced
       value: "0"
-    - name: kernel.msgmax
-      value: "65536"
-    - name: net.core.somaxconn
-      value: "1024"
+    - net.ipv6.conf.lo.mtu
+      value: "32768"
 ...
 ```
