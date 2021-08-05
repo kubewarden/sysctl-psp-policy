@@ -55,7 +55,7 @@ metadata:
 spec:
   securityContext:
     sysctls:
-    - net.ipv6.conf.lo.max_addresses
+    - name: net.ipv6.conf.lo.max_addresses
       value: "1024"
     - name: kernel.shm_rmid_forced
       value: "0"
@@ -76,7 +76,7 @@ spec:
     sysctls:
     - name: kernel.shm_rmid_forced
       value: "0"
-    - net.ipv6.conf.lo.mtu
+    - name: net.ipv6.conf.lo.mtu
       value: "32768"
 ...
 ```
