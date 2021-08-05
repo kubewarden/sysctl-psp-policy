@@ -75,5 +75,7 @@ spec:
       value: "0"
     - name: kernel.msgmax
       value: "65536"
+    - name: net.core.somaxconn
+      value: "1024"
 ...
 ```
