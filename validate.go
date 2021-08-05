@@ -42,7 +42,6 @@ func validate(payload []byte) ([]byte, error) {
 		"request.object.spec.securityContext.sysctls")
 
 	if !data.Exists() {
-		logger.Warn("pod doesn't specify sysctls: accepting request")
 		return kubewarden.AcceptRequest()
 	}
 
@@ -108,6 +107,5 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.NoCode)
 	}
 
-	logger.Info("accepting pod object")
 	return kubewarden.AcceptRequest()
 }
