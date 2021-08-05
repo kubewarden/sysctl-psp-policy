@@ -10,7 +10,7 @@ import (
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 )
 
-// getSafeSysctls returns an array with known safe sysctls.
+// CreateSafeSysctlsSet returns a set with the known safe sysctls.
 //
 // A sysctl is called safe iff:
 // - it is namespaced in the container or the pod
@@ -18,13 +18,13 @@ import (
 //
 // A (possibly not up-to-date) list of known safe sysctls can be found at:
 // https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline
-func getSafeSysctls() [4]string {
-	return [4]string{
-		"kernel.shm_rmid_forced",
-		"net.ipv4.ip_local_port_range",
-		"net.ipv4.tcp_syncookies",
-		"net.ipv4.ping_group_range",
-	}
+func CreateSafeSysctlsSet() (safeSysctls mapset.Set) {
+	safeSysctls = mapset.NewThreadUnsafeSet()
+	safeSysctls.Add("kernel.shm_rmid_forced")
+	safeSysctls.Add("net.ipv4.ip_local_port_range")
+	safeSysctls.Add("net.ipv4.tcp_syncookies")
+	safeSysctls.Add("net.ipv4.ping_group_range")
+	return safeSysctls
 }
 
 func validate(payload []byte) ([]byte, error) {
@@ -42,6 +42,7 @@ func validate(payload []byte) ([]byte, error) {
 		"request.object.spec.securityContext.sysctls")
 
 	if !data.Exists() {
+		// Pod specifies no sysctls, accepting
 		return kubewarden.AcceptRequest()
 	}
 
@@ -53,12 +54,7 @@ func validate(payload []byte) ([]byte, error) {
 		e.String("namespace", namespace)
 	})
 
-	// build set of safe sysctls:
-	knownSafeSysctlsArray := getSafeSysctls()
-	knownSafeSysctls := mapset.NewThreadUnsafeSet()
-	for i := 0; i < len(knownSafeSysctlsArray); i++ {
-		knownSafeSysctls.Add(knownSafeSysctlsArray[i])
-	}
+	knownSafeSysctls := CreateSafeSysctlsSet()
 
 	// build set of prefixes from patterns of forbidden sysctls:
 	globForbiddenSysctls := mapset.NewThreadUnsafeSet()
