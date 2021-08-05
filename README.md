@@ -9,13 +9,13 @@ Linux Kernel sysctls are grouped into safe and unsafe sets. A safe sysctl must
 be properly isolated between pods on the same node, and are properly namespaced
 by the kernel. 
 
-All safe sysctls are enabled by default in k8s.
+All safe sysctls are enabled by default in Kubernetes.
 All unsafe sysctls are disabled by default and must be explicitly allowed on a
 per-node or per-pod basis.
 
 As the deprecated analogous Kubernetes PSP, this policy validates which sysctls
 can get set in pods by specifying lists of sysctls or sysctl patterns to be
-allowed or forbidden. One can then modify the securityContext of Pods to make
+allowed or forbidden. One can then modify the `securityContext` of Pods to make
 use of the Sysctls as permitted by this policy.
 
 Remember that pods that specify disabled unsafe sysctls will be scheduled, but
@@ -27,7 +27,7 @@ The following settings are accepted:
 
 * `forbiddenSysctls`: List of plain sysctl names or sysctl patterns (which end
   with `*`) to be forbidden. You can forbid a combination of safe and unsafe
-  sysctls in the list. To forbid setting any sysctls, use * on its own.
+  sysctls in the list. To forbid setting any sysctls, use `*` on its own.
 * `allowedUnsafeSysctls`: List of plain sysctl names that can be used in Pods.
   `*` cannot be used.
 
