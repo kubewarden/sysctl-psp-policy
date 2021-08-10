@@ -6,7 +6,7 @@ rules:
 mutating: false
 contextAware: false
 annotations:
-  io.kubewarden.policy.title: policy-sysctl
+  io.kubewarden.policy.title: psp-sysctl
   io.kubewarden.policy.description: policy to control sysctls in pods
   io.kubewarden.policy.author: Victor Cuadrado Juan
   io.kubewarden.policy.url: https://github.com/kubewarden/psp-sysctl-policy

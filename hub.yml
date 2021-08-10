@@ -1,4 +1,4 @@
-name: policy-sysctl
+name: psp-sysctl
 description: policy to control sysctls in pods
 homepage: https://github.com/kubewarden/psp-sysctl-policy
 author:
