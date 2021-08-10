@@ -1,5 +1,5 @@
 name: psp-sysctl
-description: policy to control sysctls in pods
+description: A Pod Security Policy that controls usage of sysctls in pods
 homepage: https://github.com/kubewarden/psp-sysctl-policy
 author:
   name: Kuberwarden devs
