@@ -43,8 +43,8 @@ func NewSettingsFromValidateSettingsPayload(payload []byte) (Settings, error) {
 
 	return newSettings(
 		payload,
-		"settings.allowedUnsafeSysctls",
-		"settings.forbiddenSysctls")
+		"allowedUnsafeSysctls",
+		"forbiddenSysctls")
 }
 
 func newSettings(payload []byte, paths ...string) (Settings, error) {
