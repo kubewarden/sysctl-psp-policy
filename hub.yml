@@ -1,12 +1,12 @@
 name: psp-sysctl
 description: A Pod Security Policy that controls usage of sysctls in pods
-homepage: https://github.com/kubewarden/psp-sysctl-policy
+homepage: https://github.com/kubewarden/sysctl-psp-policy
 author:
   name: Kuberwarden devs
   homepage: https://github.com/kubewarden
 download:
   registry: ghcr.io/kubewarden/policies/psp-sysctl:__TAG__
-  url: https://github.com/kubewarden/psp-sysctl-policy/releases/download/__TAG__/policy.wasm
+  url: https://github.com/kubewarden/sysctl-psp-policy/releases/download/__TAG__/policy.wasm
 keywords:
   - PSP
   - Sysctl

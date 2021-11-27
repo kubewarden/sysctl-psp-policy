@@ -9,8 +9,8 @@ annotations:
   io.kubewarden.policy.title: psp-sysctl
   io.kubewarden.policy.description: PSP that controls usage of sysctls in pods
   io.kubewarden.policy.author: Victor Cuadrado Juan
-  io.kubewarden.policy.url: https://github.com/kubewarden/psp-sysctl-policy
-  io.kubewarden.policy.source: https://github.com/kubewarden/psp-sysctl-policy
+  io.kubewarden.policy.url: https://github.com/kubewarden/sysctl-psp-policy
+  io.kubewarden.policy.source: https://github.com/kubewarden/sysctl-psp-policy
   io.kubewarden.policy.license: Apache-2.0
   io.kubewarden.policy.usage: |
     This policy validates which sysctls can get set in pods by specifying lists
