@@ -102,7 +102,7 @@ func TestSettingsAreValid(t *testing.T) {
 			}
 			`,
 			wantError: true,
-			error: "allowedUnsafeSysctls doesn't accept patterns with `*`",
+			error:     "allowedUnsafeSysctls doesn't accept patterns with `*`",
 		},
 		{
 			name: "globs need to be suffix",
@@ -116,7 +116,7 @@ func TestSettingsAreValid(t *testing.T) {
 			}
 			`,
 			wantError: true,
-			error: "forbiddenSysctls only accepts patterns with `*` as suffix",
+			error:     "forbiddenSysctls only accepts patterns with `*` as suffix",
 		},
 		{
 			name: "sysctl in both fields",
@@ -130,16 +130,16 @@ func TestSettingsAreValid(t *testing.T) {
 			}
 			`,
 			wantError: true,
-			error: "these sysctls cannot be allowed and forbidden at the same time: net.core.somaxconn",
+			error:     "these sysctls cannot be allowed and forbidden at the same time: net.core.somaxconn",
 		},
 	} {
 		t.Run(tcase.name, func(t *testing.T) {
 			rawRequest := []byte(tcase.request)
 
-			settings, err := NewSettingsFromValidationReq(rawRequest)
+			settings, _ := NewSettingsFromValidationReq(rawRequest)
 			valid, err := settings.Valid()
 
-			if (err != nil) {
+			if err != nil {
 				if !tcase.wantError {
 					t.Errorf("on test %q, got unexpected error '%v'", tcase.name, err)
 				} else {
