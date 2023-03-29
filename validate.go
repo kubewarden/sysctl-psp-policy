@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	mapset "github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set/v2"
 	onelog "github.com/francoispqt/onelog"
 	"github.com/kubewarden/gjson"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
@@ -18,8 +18,8 @@ import (
 //
 // A (possibly not up-to-date) list of known safe sysctls can be found at:
 // https://kubernetes.io/docs/concepts/security/pod-security-standards/#baseline
-func CreateSafeSysctlsSet() (safeSysctls mapset.Set) {
-	safeSysctls = mapset.NewThreadUnsafeSet()
+func CreateSafeSysctlsSet() (safeSysctls mapset.Set[string]) {
+	safeSysctls = mapset.NewThreadUnsafeSet[string]()
 	safeSysctls.Add("kernel.shm_rmid_forced")
 	safeSysctls.Add("net.ipv4.ip_local_port_range")
 	safeSysctls.Add("net.ipv4.tcp_syncookies")
@@ -57,10 +57,10 @@ func validate(payload []byte) ([]byte, error) {
 	knownSafeSysctls := CreateSafeSysctlsSet()
 
 	// build set of prefixes from patterns of forbidden sysctls:
-	globForbiddenSysctls := mapset.NewThreadUnsafeSet()
+	globForbiddenSysctls := mapset.NewThreadUnsafeSet[string]()
 	for _, elem := range settings.ForbiddenSysctls.ToSlice() {
-		if strings.HasSuffix(elem.(string), "*") {
-			globForbiddenSysctls.Add(strings.TrimSuffix(elem.(string), "*"))
+		if strings.HasSuffix(elem, "*") {
+			globForbiddenSysctls.Add(strings.TrimSuffix(elem, "*"))
 		}
 	}
 
@@ -74,7 +74,7 @@ func validate(payload []byte) ([]byte, error) {
 
 		// if sysctl matches a pattern, it is forbidden:
 		for _, elem := range globForbiddenSysctls.ToSlice() {
-			if strings.HasPrefix(sysctl, elem.(string)) {
+			if strings.HasPrefix(sysctl, elem) {
 				if !settings.AllowedUnsafeSysctls.Contains(sysctl) {
 					// sysctl is not whitelisted
 					err = fmt.Errorf("sysctl %s is on the forbidden list", sysctl)
