@@ -1,70 +1,23 @@
 package main
 
 import (
-	mapset "github.com/deckarep/golang-set"
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/kubewarden/gjson"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
+	easyjson "github.com/mailru/easyjson"
 
 	"fmt"
 	"strings"
 )
 
 type Settings struct {
-	AllowedUnsafeSysctls mapset.Set `json:"allowedUnsafeSysctls"`
-	ForbiddenSysctls     mapset.Set `json:"forbiddenSysctls"`
+	AllowedUnsafeSysctls mapset.Set[string] `json:"allowedUnsafeSysctls"`
+	ForbiddenSysctls     mapset.Set[string] `json:"forbiddenSysctls"`
 }
 
-// Builds a new Settings instance starting from a validation
-// request payload:
-// {
-//    "request": ...,
-//    "settings": {
-//       "allowedUnsafeSysctls": [...],
-//       "forbiddenSysctls": [...]
-//    }
-// }
-func NewSettingsFromValidationReq(payload []byte) (Settings, error) {
-	return newSettings(
-		payload,
-		"settings.allowedUnsafeSysctls",
-		"settings.forbiddenSysctls")
-}
-
-// Builds a new Settings instance starting from a Settings
-// payload:
-// {
-//    "allowedUnsafeSysctls": [...],
-//    "forbiddenSysctls": [...]
-// }
-func NewSettingsFromValidateSettingsPayload(payload []byte) (Settings, error) {
-	if !gjson.ValidBytes(payload) {
-		return Settings{}, fmt.Errorf("denied JSON payload")
-	}
-
-	return newSettings(
-		payload,
-		"allowedUnsafeSysctls",
-		"forbiddenSysctls")
-}
-
-func newSettings(payload []byte, paths ...string) (Settings, error) {
-	if len(paths) != 2 {
-		return Settings{}, fmt.Errorf("wrong number of json paths")
-	}
-
-	data := gjson.GetManyBytes(payload, paths...)
-
-	allowedUnsafeSysctls := mapset.NewThreadUnsafeSet()
-	data[0].ForEach(func(_, entry gjson.Result) bool {
-		allowedUnsafeSysctls.Add(entry.String())
-		return true
-	})
-
-	forbiddenSysctls := mapset.NewThreadUnsafeSet()
-	data[1].ForEach(func(_, entry gjson.Result) bool {
-		forbiddenSysctls.Add(entry.String())
-		return true
-	})
+func NewSettingsFromRaw(rawSettings *RawSettings) (Settings, error) {
+	allowedUnsafeSysctls := mapset.NewThreadUnsafeSet(rawSettings.AllowedUnsafeSysctls...)
+	forbiddenSysctls := mapset.NewThreadUnsafeSet(rawSettings.ForbiddenSysctls...)
 
 	return Settings{
 		AllowedUnsafeSysctls: allowedUnsafeSysctls,
@@ -72,18 +25,57 @@ func newSettings(payload []byte, paths ...string) (Settings, error) {
 	}, nil
 }
 
+// Builds a new Settings instance starting from a validation
+// request payload:
+//
+//	{
+//	   "request": ...,
+//	   "settings": {
+//	      "allowedUnsafeSysctls": [...],
+//	      "forbiddenSysctls": [...]
+//	   }
+//	}
+func NewSettingsFromValidationReq(payload []byte) (Settings, error) {
+	settingsJson := gjson.GetBytes(payload, "settings")
+
+	rawSettings := RawSettings{}
+	err := easyjson.Unmarshal([]byte(settingsJson.Raw), &rawSettings)
+	if err != nil {
+		return Settings{}, err
+	}
+
+	return NewSettingsFromRaw(&rawSettings)
+}
+
+// Builds a new Settings instance starting from a Settings
+// payload:
+//
+//	{
+//	   "allowedUnsafeSysctls": [...],
+//	   "forbiddenSysctls": [...]
+//	}
+func NewSettingsFromValidateSettingsPayload(payload []byte) (Settings, error) {
+	rawSettings := RawSettings{}
+	err := easyjson.Unmarshal(payload, &rawSettings)
+	if err != nil {
+		return Settings{}, err
+	}
+
+	return NewSettingsFromRaw(&rawSettings)
+}
+
 func (s *Settings) Valid() (bool, error) {
 
 	for _, elem := range s.AllowedUnsafeSysctls.ToSlice() {
-		if strings.Contains(elem.(string), "*") {
+		if strings.Contains(elem, "*") {
 			return false,
 				fmt.Errorf("allowedUnsafeSysctls doesn't accept patterns with `*`")
 		}
 	}
 
 	for _, elem := range s.ForbiddenSysctls.ToSlice() {
-		if strings.Contains(elem.(string), "*") &&
-			!strings.HasSuffix(elem.(string), "*") {
+		if strings.Contains(elem, "*") &&
+			!strings.HasSuffix(elem, "*") {
 			return false,
 				fmt.Errorf("forbiddenSysctls only accepts patterns with `*` as suffix")
 		}
@@ -92,8 +84,9 @@ func (s *Settings) Valid() (bool, error) {
 	allowedAndForbidden := s.AllowedUnsafeSysctls.Intersect(s.ForbiddenSysctls)
 	if allowedAndForbidden.Cardinality() != 0 {
 		return false,
-			fmt.Errorf("these sysctls cannot be allowed and forbidden at the same time: %v",
-				allowedAndForbidden.ToSlice()...)
+			fmt.Errorf("these sysctls cannot be allowed and forbidden at the same time: %s",
+				strings.Join(allowedAndForbidden.ToSlice(), ","),
+			)
 	}
 
 	return true, nil
