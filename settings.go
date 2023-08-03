@@ -1,10 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/kubewarden/gjson"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
-	easyjson "github.com/mailru/easyjson"
 
 	"fmt"
 	"strings"
@@ -13,16 +14,6 @@ import (
 type Settings struct {
 	AllowedUnsafeSysctls mapset.Set[string] `json:"allowedUnsafeSysctls"`
 	ForbiddenSysctls     mapset.Set[string] `json:"forbiddenSysctls"`
-}
-
-func NewSettingsFromRaw(rawSettings *RawSettings) (Settings, error) {
-	allowedUnsafeSysctls := mapset.NewThreadUnsafeSet(rawSettings.AllowedUnsafeSysctls...)
-	forbiddenSysctls := mapset.NewThreadUnsafeSet(rawSettings.ForbiddenSysctls...)
-
-	return Settings{
-		AllowedUnsafeSysctls: allowedUnsafeSysctls,
-		ForbiddenSysctls:     forbiddenSysctls,
-	}, nil
 }
 
 // Builds a new Settings instance starting from a validation
@@ -38,13 +29,13 @@ func NewSettingsFromRaw(rawSettings *RawSettings) (Settings, error) {
 func NewSettingsFromValidationReq(payload []byte) (Settings, error) {
 	settingsJson := gjson.GetBytes(payload, "settings")
 
-	rawSettings := RawSettings{}
-	err := easyjson.Unmarshal([]byte(settingsJson.Raw), &rawSettings)
+	settings := Settings{}
+	err := json.Unmarshal([]byte(settingsJson.Raw), &settings)
 	if err != nil {
 		return Settings{}, err
 	}
 
-	return NewSettingsFromRaw(&rawSettings)
+	return settings, nil
 }
 
 // Builds a new Settings instance starting from a Settings
@@ -55,17 +46,35 @@ func NewSettingsFromValidationReq(payload []byte) (Settings, error) {
 //	   "forbiddenSysctls": [...]
 //	}
 func NewSettingsFromValidateSettingsPayload(payload []byte) (Settings, error) {
-	rawSettings := RawSettings{}
-	err := easyjson.Unmarshal(payload, &rawSettings)
+	settings := Settings{}
+	err := json.Unmarshal(payload, &settings)
 	if err != nil {
 		return Settings{}, err
 	}
 
-	return NewSettingsFromRaw(&rawSettings)
+	return settings, nil
+}
+
+func (s *Settings) UnmarshalJSON(data []byte) error {
+	// This is needed becaus golang-set v2.3.0 has a bug that prevents
+	// the correct unmarshalling of ThreadUnsafeSet types.
+	rawSettings := struct {
+		AllowedUnsafeSysctls []string `json:"allowedUnsafeSysctls"`
+		ForbiddenSysctls     []string `json:"forbiddenSysctls"`
+	}{}
+
+	err := json.Unmarshal(data, &rawSettings)
+	if err != nil {
+		return err
+	}
+
+	s.AllowedUnsafeSysctls = mapset.NewThreadUnsafeSet(rawSettings.AllowedUnsafeSysctls...)
+	s.ForbiddenSysctls = mapset.NewThreadUnsafeSet(rawSettings.ForbiddenSysctls...)
+
+	return nil
 }
 
 func (s *Settings) Valid() (bool, error) {
-
 	for _, elem := range s.AllowedUnsafeSysctls.ToSlice() {
 		if strings.Contains(elem, "*") {
 			return false,
