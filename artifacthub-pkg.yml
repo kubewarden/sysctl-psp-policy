@@ -4,29 +4,33 @@
 #
 # This config can be saved to its default location with:
 #   kwctl scaffold artifacthub > artifacthub-pkg.yml 
-version: 0.1.12
+version: 1.0.0
 name: sysctl-psp
 displayName: Sysctl PSP
-createdAt: 2023-08-03T12:49:39.38986867Z
+createdAt: 2025-04-14T13:12:17.951071051Z
 description: A Pod Security Policy that controls usage of sysctls in pods
 license: Apache-2.0
 homeURL: https://github.com/kubewarden/sysctl-psp-policy
 containersImages:
 - name: policy
-  image: ghcr.io/kubewarden/policies/sysctl-psp:v0.1.12
+  image: ghcr.io/kubewarden/policies/sysctl-psp:v1.0.0
 keywords:
 - sysctl
 - psp
 - pod
 links:
 - name: policy
-  url: https://github.com/kubewarden/sysctl-psp-policy/releases/download/v0.1.12/policy.wasm
+  url: https://github.com/kubewarden/sysctl-psp-policy/releases/download/v1.0.0/policy.wasm
 - name: source
   url: https://github.com/kubewarden/sysctl-psp-policy
 install: |
   The policy can be obtained using [`kwctl`](https://github.com/kubewarden/kwctl):
   ```console
-  kwctl pull ghcr.io/kubewarden/policies/sysctl-psp:v0.1.12
+  kwctl pull ghcr.io/kubewarden/policies/sysctl-psp:v1.0.0
+  ```
+  Then, generate the policy manifest and tune it to your liking. For example:
+  ```console
+  kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/kubewarden/policies/sysctl-psp:v1.0.0
   ```
 maintainers:
 - name: Kubewarden developers
